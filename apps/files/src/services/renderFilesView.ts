@@ -4,10 +4,14 @@
  */
 
 import { getNavigation } from '@nextcloud/files'
-import Vue from 'vue'
+import { createApp } from 'vue'
+import { createMemoryHistory } from 'vue-router'
 import FilesList from '../views/FilesList.vue'
-import { createRouter } from '../router/router.ts'
-import { getPinia } from '../store/index.ts'
+import { createFilesRouter } from '../router/router.ts'
+import { pinia } from '../store/index.ts'
+import RouterService from './RouterService.ts'
+
+let activeRouterService: RouterService | undefined
 
 /** Handle returned by `renderFilesView()` to tear down the embedded instance. */
 export interface RenderedFilesView {
@@ -28,30 +32,48 @@ export interface RenderedFilesView {
  * the target view must already be registered via `getNavigation().register()`.
  *
  * Exposed as `OCP.Files.renderFilesApp()`.
+ * Only one embedded Files view can be active at a time.
  *
  * @param el the element to mount the file list into
  * @param viewId the id of the Files navigation view to display
  */
 export function renderFilesView(el: HTMLElement, viewId: string): RenderedFilesView {
-	const router = createRouter('abstract')
-	const FilesListVue = Vue.extend(FilesList)
-	const vm = new FilesListVue({
-		router,
-		pinia: getPinia(),
-		propsData: {
-			embedded: true,
-		},
-	}).$mount(el)
+	if (activeRouterService) {
+		throw new Error('Only one embedded Files view can be active at a time')
+	}
+
+	const router = createFilesRouter(createMemoryHistory())
+	const previousRouterService = window.OCP.Files.Router
+	const routerService = new RouterService(router)
+	const app = createApp(FilesList, { embedded: true })
+	app.use(pinia)
+	app.use(router)
+	window.OCP.Files.Router = routerService
+	activeRouterService = routerService
+	try {
+		app.mount(el)
+	} catch (error) {
+		window.OCP.Files.Router = previousRouterService
+		activeRouterService = undefined
+		throw error
+	}
 
 	// Normally done by the navigation sidebar's route watcher; there is none
 	// here, so keep the active view in sync ourselves.
 	getNavigation().setActive(viewId)
-	router.push({ name: 'filelist', params: { view: viewId } }).catch(() => {})
+	void router.push({ name: 'filelist', params: { view: viewId } }).catch(() => {})
 
 	return {
 		destroy: () => {
-			vm.$destroy()
-			vm.$el.remove()
+			if (activeRouterService !== routerService) {
+				return
+			}
+
+			app.unmount()
+			if (window.OCP.Files.Router === routerService) {
+				window.OCP.Files.Router = previousRouterService
+			}
+			activeRouterService = undefined
 		},
 	}
 }

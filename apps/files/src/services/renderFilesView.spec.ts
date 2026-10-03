@@ -3,18 +3,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import type RouterService from './RouterService.ts'
+
 import { getNavigation, View } from '@nextcloud/files'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { renderFilesView } from './renderFilesView.ts'
 
 const VIEW_ID = 'test-view'
+const renderedViews: Array<ReturnType<typeof renderFilesView>> = []
+
+function mountFilesView(el: HTMLElement) {
+	const rendered = renderFilesView(el, VIEW_ID)
+	renderedViews.push(rendered)
+	return rendered
+}
 
 vi.mock('../views/FilesList.vue', () => ({
 	default: {
 		name: 'FilesList',
 		props: { embedded: { type: Boolean, default: false } },
-		render(h) {
-			return h('div', { attrs: { id: 'files-list-stub', 'data-embedded': String(this.embedded) } })
+		render() {
+			return h('div', { id: 'files-list-stub', 'data-embedded': String(this.embedded) })
 		},
 	},
 }))
@@ -22,6 +32,8 @@ vi.mock('../views/FilesList.vue', () => ({
 describe('renderFilesView', () => {
 	beforeEach(() => {
 		document.body.innerHTML = ''
+		window.OCP = { Files: { Router: {} as RouterService } } as unknown as typeof window.OCP
+		renderedViews.length = 0
 		getNavigation().register(new View({
 			id: VIEW_ID,
 			name: 'Test view',
@@ -31,6 +43,9 @@ describe('renderFilesView', () => {
 	})
 
 	afterEach(() => {
+		for (const rendered of renderedViews) {
+			rendered.destroy()
+		}
 		getNavigation().remove(VIEW_ID)
 	})
 
@@ -38,7 +53,7 @@ describe('renderFilesView', () => {
 		const el = document.createElement('div')
 		document.body.appendChild(el)
 
-		renderFilesView(el, VIEW_ID)
+		mountFilesView(el)
 
 		const stub = document.body.querySelector('#files-list-stub')
 		expect(stub).not.toBeNull()
@@ -50,19 +65,52 @@ describe('renderFilesView', () => {
 		document.body.appendChild(el)
 		const before = window.location.href
 
-		renderFilesView(el, VIEW_ID)
+		mountFilesView(el)
 
 		expect(window.location.href).toBe(before)
 		expect(getNavigation().active?.id).toBe(VIEW_ID)
+	})
+
+	it('routes embedded navigation in memory and restores the previous router on destroy', async () => {
+		const el = document.createElement('div')
+		document.body.appendChild(el)
+		const previousRouter = window.OCP.Files.Router
+		const before = window.location.href
+
+		const rendered = mountFilesView(el)
+		await window.OCP.Files.Router.goToRoute('filelist', { view: VIEW_ID })
+
+		expect(window.location.href).toBe(before)
+		expect(window.OCP.Files.Router).not.toBe(previousRouter)
+
+		rendered.destroy()
+		expect(window.OCP.Files.Router).toBe(previousRouter)
 	})
 
 	it('returns a handle that unmounts the file list', () => {
 		const el = document.createElement('div')
 		document.body.appendChild(el)
 
-		const rendered = renderFilesView(el, VIEW_ID)
+		const rendered = mountFilesView(el)
 		rendered.destroy()
 
 		expect(document.body.querySelector('#files-list-stub')).toBeNull()
+	})
+
+	it('rejects another embed while one is active and allows one after destroy', () => {
+		const firstEl = document.createElement('div')
+		const secondEl = document.createElement('div')
+		document.body.append(firstEl, secondEl)
+		const previousRouter = window.OCP.Files.Router
+		const rendered = mountFilesView(firstEl)
+		const embeddedRouter = window.OCP.Files.Router
+
+		expect(() => renderFilesView(secondEl, VIEW_ID)).toThrow('Only one embedded Files view can be active at a time')
+		expect(window.OCP.Files.Router).toBe(embeddedRouter)
+
+		rendered.destroy()
+		expect(window.OCP.Files.Router).toBe(previousRouter)
+		const secondRendered = mountFilesView(secondEl)
+		secondRendered.destroy()
 	})
 })

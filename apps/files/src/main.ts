@@ -42,7 +42,6 @@ const Settings = new SettingsService()
 Object.assign(window.OCA.Files, { Settings })
 Object.assign(window.OCA.Files.Settings, { Setting: SettingsModel })
 
-<<<<<<< HEAD
 // Other apps load this same script to get `OCP.Files.renderFilesApp()`.
 // Only take over `#content` when we are actually on the Files app's own
 // page - identifiable by the app-specific class core's layout adds to it.
