@@ -8,6 +8,7 @@ import type { RenderedFilesView } from './apps/files/src/services/renderFilesVie
 import type RouterService from './apps/files/src/services/RouterService.ts'
 import type Settings from './apps/files/src/services/Settings.js'
 import type Sidebar from './apps/files/src/services/Sidebar.js'
+import type { LegacyViewerApi } from './apps/viewer/src/legacy.ts'
 
 type SidebarAPI = Sidebar & {
 	open: (path: string) => Promise<void>
@@ -27,6 +28,11 @@ declare global {
 				Settings: Settings
 				Sidebar: SidebarAPI
 			}
+			/**
+			 * @deprecated since 36, removed in 39.
+			 * Use the `@nextcloud/viewer` package instead.
+			 */
+			Viewer?: LegacyViewerApi
 		} & Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
 
 		// Public Files namespace
