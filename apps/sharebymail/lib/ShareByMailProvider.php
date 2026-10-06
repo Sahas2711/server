@@ -550,7 +550,7 @@ class ShareByMailProvider extends DefaultShareProvider implements IShareProvider
 
 		$emailTemplate->setSubject($this->l->t('%s added a note to a file shared with you', [$initiatorDisplayName]));
 		$emailTemplate->addHeader();
-		$emailTemplate->addHeading(htmlspecialchars($htmlHeading), $plainHeading);
+		$emailTemplate->addHeading($htmlHeading, $plainHeading);
 		$emailTemplate->addBodyText(htmlspecialchars($note), $note);
 
 		$link = $this->urlGenerator->linkToRouteAbsolute('files_sharing.sharecontroller.showShare',
