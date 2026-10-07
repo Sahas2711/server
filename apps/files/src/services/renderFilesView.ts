@@ -4,9 +4,8 @@
  */
 
 import { getNavigation } from '@nextcloud/files'
-import { createApp } from 'vue'
+import { createApp, defineAsyncComponent } from 'vue'
 import { createMemoryHistory } from 'vue-router'
-import FilesList from '../views/FilesList.vue'
 import { createFilesRouter } from '../router/router.ts'
 import { pinia } from '../store/index.ts'
 import RouterService from './RouterService.ts'
@@ -45,6 +44,8 @@ export function renderFilesView(el: HTMLElement, viewId: string): RenderedFilesV
 	const router = createFilesRouter(createMemoryHistory())
 	const previousRouterService = window.OCP.Files.Router
 	const routerService = new RouterService(router)
+	// Lazy-loaded like in the router, so its CSS is applied after the shared component styles
+	const FilesList = defineAsyncComponent(() => import('../views/FilesList.vue').then((module) => module.default))
 	const app = createApp(FilesList, { embedded: true })
 	app.use(pinia)
 	app.use(router)

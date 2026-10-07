@@ -49,14 +49,17 @@ describe('renderFilesView', () => {
 		getNavigation().remove(VIEW_ID)
 	})
 
-	it('mounts only the file list, embedded, into the given element', () => {
+	it('mounts only the file list, embedded, into the given element', async () => {
 		const el = document.createElement('div')
 		document.body.appendChild(el)
 
 		mountFilesView(el)
 
-		const stub = document.body.querySelector('#files-list-stub')
-		expect(stub).not.toBeNull()
+		const stub = await vi.waitFor(() => {
+			const stub = document.body.querySelector('#files-list-stub')
+			expect(stub).not.toBeNull()
+			return stub
+		})
 		expect(stub?.getAttribute('data-embedded')).toBe('true')
 	})
 
@@ -87,11 +90,12 @@ describe('renderFilesView', () => {
 		expect(window.OCP.Files.Router).toBe(previousRouter)
 	})
 
-	it('returns a handle that unmounts the file list', () => {
+	it('returns a handle that unmounts the file list', async () => {
 		const el = document.createElement('div')
 		document.body.appendChild(el)
 
 		const rendered = mountFilesView(el)
+		await vi.waitFor(() => expect(document.body.querySelector('#files-list-stub')).not.toBeNull())
 		rendered.destroy()
 
 		expect(document.body.querySelector('#files-list-stub')).toBeNull()
