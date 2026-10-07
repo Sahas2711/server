@@ -11,11 +11,14 @@ namespace OCA\DAV\Tests\unit\CalDAV;
 use OCA\DAV\CalDAV\BirthdayService;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\DAV\CalDAV\Calendar;
+use OCA\DAV\Connector\Sabre\DavAclPlugin;
 use OCP\IConfig;
 use OCP\IL10N;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Sabre\DAV\PropPatch;
+use Sabre\DAV\Server;
+use Sabre\DAV\SimpleCollection;
 use Sabre\VObject\Reader;
 use Test\TestCase;
 
@@ -220,6 +223,11 @@ class CalendarTest extends TestCase {
 			$expectedAcl[] = [
 				'privilege' => '{DAV:}write',
 				'principal' => ($hasOwnerSet ? 'user1' : 'user2') . '/calendar-proxy-write',
+				'protected' => true
+			];
+			$expectedAcl[] = [
+				'privilege' => '{DAV:}write-acl',
+				'principal' => $hasOwnerSet ? 'user1' : 'user2',
 				'protected' => true
 			];
 		}
