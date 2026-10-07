@@ -965,14 +965,14 @@ class IMipService {
 		}
 		$this->addAttendees($details, $vevent);
 
-		$template->addBodyDetails($details);
-
 		if ($data['meeting_description'] !== '') {
 			$template->addBodyNote($data['meeting_description'], $this->l10n->t('Description'));
 			if (isset($data['meeting_description_previous'])) {
 				$template->addBodyNote($data['meeting_description_previous'], $this->l10n->t('Previous description'));
 			}
 		}
+
+		$template->addBodyDetails($details);
 	}
 
 	private function addDetailsRow(EMailDetails $details, string $label, array $data, string $key): void {

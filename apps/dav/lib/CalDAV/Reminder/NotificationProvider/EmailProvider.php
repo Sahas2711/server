@@ -154,11 +154,11 @@ class EmailProvider extends AbstractProvider {
 		if (isset($vevent->LOCATION)) {
 			$details->addRow($l10n->t('Where'))->text((string)$vevent->LOCATION);
 		}
-		$template->addBodyDetails($details);
-
 		if (isset($vevent->DESCRIPTION)) {
 			$template->addBodyNote((string)$vevent->DESCRIPTION, $l10n->t('Description'));
 		}
+
+		$template->addBodyDetails($details);
 	}
 
 	/**
