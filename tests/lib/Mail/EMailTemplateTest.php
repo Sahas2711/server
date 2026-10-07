@@ -264,9 +264,9 @@ class EMailTemplateTest extends TestCase {
 		$this->emailTemplate->addHeader();
 		$this->emailTemplate->addBodySender('Alice Martin', 'alice.martin@example.org');
 		$this->emailTemplate->addHeading('Alice Martin invited you to an event');
-		$this->emailTemplate->addBodyDetails($details);
 		$this->emailTemplate->addBodyNote("We'll go through the Q3 numbers.\nPlease review the report beforehand.", 'Description');
 		$this->emailTemplate->addBodyNote('The password is sent in a separate email.', 'This share is password protected.', IEMailTemplate::NOTE_WARNING);
+		$this->emailTemplate->addBodyDetails($details);
 		$this->emailTemplate->addBodyButtons([
 			['text' => 'Accept', 'url' => 'https://example.org/invitation/accept'],
 			['text' => 'Maybe', 'url' => 'https://example.org/invitation/tentative'],

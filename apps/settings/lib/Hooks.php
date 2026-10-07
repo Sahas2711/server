@@ -190,8 +190,8 @@ class Hooks implements IEventListener {
 			} else {
 				$newMailAddress->muted($l->t('No email address set'));
 			}
-			$template->addBodyDetails($details);
 			$template->addBodyNote($l->t('If you did not request this, please contact an administrator.'), '', IEMailTemplate::NOTE_WARNING);
+			$template->addBodyDetails($details);
 			$template->addFooter();
 
 			$message = $this->mailer->createMessage();
