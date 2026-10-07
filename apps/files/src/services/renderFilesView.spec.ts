@@ -8,29 +8,36 @@ import type RouterService from './RouterService.ts'
 import { getNavigation, View } from '@nextcloud/files'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
+import { mountSidebar, unmountSidebar } from '../sidebar/mount.ts'
 import { renderFilesView } from './renderFilesView.ts'
 
 const VIEW_ID = 'test-view'
 const renderedViews: Array<ReturnType<typeof renderFilesView>> = []
 
-function mountFilesView(el: HTMLElement) {
-	const rendered = renderFilesView(el, VIEW_ID)
+function mountFilesView(el: HTMLElement, options?: Parameters<typeof renderFilesView>[2]) {
+	const rendered = renderFilesView(el, VIEW_ID, options)
 	renderedViews.push(rendered)
 	return rendered
 }
 
+vi.mock('../sidebar/mount.ts', () => ({
+	mountSidebar: vi.fn(() => true),
+	unmountSidebar: vi.fn(),
+}))
+
 vi.mock('../views/FilesList.vue', () => ({
 	default: {
 		name: 'FilesList',
-		props: { embedded: { type: Boolean, default: false } },
+		props: { embedded: { type: Boolean, default: false }, rootDir: { type: String, default: '/' } },
 		render() {
-			return h('div', { id: 'files-list-stub', 'data-embedded': String(this.embedded) })
+			return h('div', { id: 'files-list-stub', 'data-embedded': String(this.embedded), 'data-root-dir': this.rootDir })
 		},
 	},
 }))
 
 describe('renderFilesView', () => {
 	beforeEach(() => {
+		vi.clearAllMocks()
 		document.body.innerHTML = ''
 		window.OCP = { Files: { Router: {} as RouterService } } as unknown as typeof window.OCP
 		renderedViews.length = 0
@@ -116,5 +123,53 @@ describe('renderFilesView', () => {
 		expect(window.OCP.Files.Router).toBe(previousRouter)
 		const secondRendered = mountFilesView(secondEl)
 		secondRendered.destroy()
+	})
+
+	it('opens the requested directory', async () => {
+		const el = document.createElement('div')
+		document.body.appendChild(el)
+
+		mountFilesView(el, { dir: '/Team folder' })
+
+		await vi.waitFor(() => expect(window.OCP.Files.Router.query).toEqual({ dir: '/Team folder' }))
+		expect(window.OCP.Files.Router.params).toMatchObject({ view: VIEW_ID })
+	})
+
+	it('starts the breadcrumbs with the root directory and opens it', async () => {
+		const el = document.createElement('div')
+		document.body.appendChild(el)
+
+		mountFilesView(el, { rootDir: '/Team folder' })
+
+		const stub = await vi.waitFor(() => {
+			const stub = document.body.querySelector('#files-list-stub')
+			expect(stub).not.toBeNull()
+			return stub
+		})
+		expect(stub?.getAttribute('data-root-dir')).toBe('/Team folder')
+		await vi.waitFor(() => expect(window.OCP.Files.Router.query).toEqual({ dir: '/Team folder' }))
+	})
+
+	it('does not render the sidebar unless an element is given', () => {
+		const el = document.createElement('div')
+		document.body.appendChild(el)
+
+		mountFilesView(el).destroy()
+
+		expect(mountSidebar).not.toHaveBeenCalled()
+		expect(unmountSidebar).not.toHaveBeenCalled()
+	})
+
+	it('renders the sidebar into the given element and removes it on destroy', () => {
+		const el = document.createElement('div')
+		const sidebarEl = document.createElement('div')
+		document.body.append(el, sidebarEl)
+
+		const rendered = mountFilesView(el, { sidebarEl })
+		expect(mountSidebar).toHaveBeenCalledWith(sidebarEl)
+		expect(unmountSidebar).not.toHaveBeenCalled()
+
+		rendered.destroy()
+		expect(unmountSidebar).toHaveBeenCalledOnce()
 	})
 })

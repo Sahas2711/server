@@ -127,12 +127,28 @@ function configureFilesRouter(filesRouter: Router): void {
 	})
 }
 
-export const router = createFilesRouter()
+let filesAppRouter: Router | undefined
+
+/**
+ * Get the router of the Files app's own page.
+ *
+ * Created on first use, as creating a browser history router
+ * rewrites the URL of the current page.
+ */
+export function getFilesAppRouter(): Router {
+	filesAppRouter ??= createFilesRouter()
+	return filesAppRouter
+}
 
 // Navigate through the router service, so stores reacting to the same deletion
 // (e.g. the sidebar closing) build on this navigation instead of the outdated route.
 subscribe('files:node:deleted', (node: INode) => {
 	const { Router } = window.OCP.Files
+	// no file list is rendered on the current page
+	if (!Router) {
+		return
+	}
+
 	if (Router.params.fileid === String(node.fileid)) {
 		const params = { ...Router.params }
 		const { getPath } = usePathsStore(pinia)

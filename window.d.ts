@@ -4,7 +4,7 @@
  */
 
 import type Tab from './apps/files/src/models/Tab.js'
-import type { RenderedFilesView } from './apps/files/src/services/renderFilesView.ts'
+import type { RenderedFilesView, RenderFilesViewOptions } from './apps/files/src/services/renderFilesView.ts'
 import type RouterService from './apps/files/src/services/RouterService.ts'
 import type Settings from './apps/files/src/services/Settings.js'
 import type Sidebar from './apps/files/src/services/Sidebar.js'
@@ -39,7 +39,7 @@ declare global {
 		OCP: {
 			Files: {
 				Router: RouterService
-				renderFilesApp: (el: HTMLElement, viewId: string) => RenderedFilesView
+				renderFilesApp: (el: HTMLElement, viewId: string, options?: RenderFilesViewOptions) => RenderedFilesView
 			}
 		} & Nextcloud.v29.OCP
 
